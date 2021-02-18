@@ -1,12 +1,14 @@
-import { Injectable } from "@angular/core";
-import { SuiComponentFactory } from "../../../misc/util/index";
-import { ModalConfig, TemplateModalConfig, ComponentModalConfig } from "../classes/modal-config";
-import { SuiModal } from "../components/modal";
-import { Modal } from "../classes/modal-controls";
-import { ActiveModal } from "../classes/active-modal";
+import {Injectable} from "@angular/core";
+import {SuiComponentFactory} from "../../../misc/util/index";
+import {ActiveModal} from "../classes/active-modal";
+import {ModalConfig, TemplateModalConfig, ComponentModalConfig} from "../classes/modal-config";
+import {Modal} from "../classes/modal-controls";
+import {SuiModal} from "../components/modal";
 
 @Injectable()
 export class SuiModalService {
+    private _openModals:ActiveModal<any, any, any>[] = [];
+
     constructor(private _componentFactory:SuiComponentFactory) {}
 
     public open<T, U, V>(modal:ModalConfig<T, U, V>):ActiveModal<T, U, V> {
@@ -61,6 +63,17 @@ export class SuiModalService {
         modalComponent.loadConfig(modal);
 
         // Return an instance of an `ActiveModal`, so the user can control the new modal.
-        return new ActiveModal(modal, componentRef);
+        const activeModal = new ActiveModal(modal, componentRef);
+        this._openModals.push(activeModal);
+
+        activeModal.onApprove(() => this._openModals.pop());
+        activeModal.onDeny(() => this._openModals.pop());
+
+        return activeModal;
+    }
+
+    public closeAllModals(): void {
+        this._openModals.forEach(modal => modal.destroy());
+        this._openModals = [];
     }
 }
